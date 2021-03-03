@@ -1,0 +1,8 @@
+Sequences for BLASTn
+
+#Linux code to run query gene fasta sequences with BLASTn on dataset of rhizobium genomes from Cavassim et al. 2020.
+cat *_contigs.fna > allNCHAINstrains.contigs.fna
+
+makeblastdb -in allNCHAINstrains.contigs.fna -dbtype nucl -out NCHAINstrains_blastdatabase
+ 
+blastn -query cinI.fasta -db NCHAINstrains_blastdatabase -evalue 0.1 -outfmt 6 > cinI_NCHAINhits.txt
