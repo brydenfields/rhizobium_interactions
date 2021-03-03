@@ -7,6 +7,10 @@ The R scripts and raw data are provided in this repository to enable regeneratio
 
 The following directories are included:
 
+
+
+
+
 ## scripts/
 -----
 
@@ -40,6 +44,9 @@ All scripts include comments detailing the code function at each step.
 **supernatant_MEM_analysis.R** used for ***Figure S2a, S3a-b***
 		
 **supernatant_RGI_analysis.R** used for ***Figure 2a, S4, S9***
+
+
+
 
 
 ## data/raw_data/
@@ -91,10 +98,16 @@ The following raw data files are organised into 4 separate folders depending on 
 **combined_compind_sup_inoc.csv** contains growth summary descriptive statistics for strains when acting as the inoculant or the supernatant in the indirect interaction experiment.
 
 
+
+
+
 ## data/intermediate_data
 -----
 
 An empty set of folder directories where the output data files and figure will be saved when the scripts are run. The intermediate_data folders are organised into 4 separate folders depending on which experimental data is being used - as with the script/data directory layouts above. 
+
+
+
 
 
 ## data/intermediate_data_expected_output
