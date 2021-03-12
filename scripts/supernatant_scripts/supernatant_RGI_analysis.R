@@ -401,6 +401,22 @@ ANI_compind$geno_interaction <- factor(ANI_compind$geno_interaction,
                                          labels = c("between genospecies", "within genospecies"))
 
 
+# find minimum, maximum and mean "between genospecies" ANI
+min(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
+# [1] 0.9680203
+max(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
+# 0.9999338
+mean(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
+# [1] 0.9781515
+
+# find minimum, maximum and between "within genospecies" ANI
+min(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
+# [1] 0.9017105
+max(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
+# [1] 0.9039217
+mean(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
+# [1] 0.9029475
+
 # plot: ANI vs RGI as inoculant. facet graph for between genospecies and within genospecies interactions
 (graph_lmMod_facet <- ggplot(ANI_compind, aes(x = ANI_6K, y = comp_ind,
                                                  colour = inoc_geno)) +
