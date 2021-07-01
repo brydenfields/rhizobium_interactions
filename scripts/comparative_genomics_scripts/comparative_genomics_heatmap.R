@@ -1,6 +1,6 @@
 # Author: Bryden Fields
 # Email: bryden.fields@york.ac.uk
-# Last updated: 15/02/2021
+# Last updated: 01/07/2021
 
 
 # initial set-up -------------------
@@ -9,8 +9,10 @@ library(tidyverse)
 library(pheatmap)
 library(RColorBrewer)
 library(viridis)
+library(rcompanion)
 
-setwd('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/scripts/comparative_genomics_scripts')
+#set the working directory to the directory this script is in.
+#setwd("~/what/ever/folder/you/are/working/from") 
 
 # percentage identity heatmap --------------
 
@@ -156,7 +158,7 @@ pheatmap(data_pha,
 
 
 # read in data 
-data_196 <- read.csv('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/data/raw_data/comparative_genomics_data/genospecies_196strain_presabs_percentage.csv')
+data_196 <- read.csv('../../data/raw_data/comparative_genomics_data/comparative_genomics_data/genospecies_196strain_presabs_percentage.csv')
 
 # make gene names as row names 
 row.names(data_196) <- data_196$gene
@@ -180,3 +182,128 @@ pheatmap(data_196,
          fontsize_col = 10, fontsize_row = 10,
          legend=T,
          filename = "../../data/intermediate_data/comparative_genomics_data/genospecies196_presabs_percentage_heatmap.pdf")
+
+
+
+
+
+# chi-square for significance of non-random quorum sensing gene distributions ------------------
+
+
+# presence and absence of whole gene qs system for each genospecies.
+# do individual chi-square tests for each QS pathway (tra, rhi, rai)
+whole_contindata <- read.csv('/../../data/raw_data/comparative_genomics_data/genospecies_196strain_presabs_absolutevalues_v2.csv')
+
+
+# use fisher's exact test for each gene instead.
+#http://rcompanion.org/rcompanion/b_07.html
+
+
+for (i in unique(whole_contindata$gene)){
+  # make a contingency table for each gene
+  subset_data <- whole_contindata[whole_contindata$gene == i, ]
+  row.names(subset_data) <- subset_data$genospecies
+  subset_data[c("genospecies", "gene")] <- NULL
+  # make into a matrix for the test
+  subset_data <- as.matrix(subset_data, header=TRUE)
+  # run the fisher exact test
+  print(i)
+  print(fisher.test(subset_data,
+              alternative="two.sided"))
+  
+}
+
+
+# [1] "bisR"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value = 0.0004895
+# alternative hypothesis: two.sided
+# 
+# [1] "traI"
+# 
+# 	Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value = 0.001102
+# alternative hypothesis: two.sided
+# 
+# [1] "traR"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value = 0.0004895
+# alternative hypothesis: two.sided
+# 
+# [1] "raiI"
+# 
+# 	Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "raiR"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "rhiI"
+# 
+# 	Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "rhiR"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "rhiA"
+# 
+# 	Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "rhiB"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "rhiC"
+# 
+# 	Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+# 
+# [1] "vbsS"
+# 
+# Fisher's Exact Test for Count Data
+# 
+# data:  subset_data
+# p-value < 2.2e-16
+# alternative hypothesis: two.sided
+
+
+
+
+
+
