@@ -1,10 +1,11 @@
 # Author: Bryden Fields
 # Email: bryden.fields@york.ac.uk
-# Last updated: 02/02/2021
+# Last updated: 01/07/2021
 
 # Initial setup -------------------------------------------------------------------
 
-setwd('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/scripts/supernatant_scripts')
+#set the working directory to the directory this script is in.
+#setwd("~/what/ever/folder/you/are/working/from") 
 
 library(tidyverse)
 library(RColorBrewer)
@@ -241,12 +242,15 @@ ggsave('../../data/intermediate_data/supernatant_data/compind_62hheat_histogramd
 
 # what is the median and mean of the inoculant RGIs
 mean(means_compheat_62$comp_ind)
+# [1] 1.005847
 median(means_compheat_62$comp_ind)
+# [1] 1.003787
 
 # how many RGI's less than 0.75 and RGIs more than 1.25?
 nrow(means_compheat_62[means_compheat_62$comp_ind < 0.75, ])
+# [1] 55
 nrow(means_compheat_62[means_compheat_62$comp_ind > 1.25, ])
-
+# [1] 55
 
 
 # correlate ANI to RGI of inoculant
@@ -280,12 +284,18 @@ plot(ANI_compind$ANI_6K, ANI_compind$dist_from_1,
 
 # pearsons correlation statistic
 cor.test(ANI_compind$ANI_6K, ANI_compind$dist_from_1)
+# Pearson's product-moment correlation
+# 
+# data:  ANI_compind$ANI_6K and ANI_compind$dist_from_1
+# t = -3.8207, df = 550, p-value = 0.0001482
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#  -0.24101588 -0.07839274
+# sample estimates:
+#        cor 
+# -0.1607954
 
 
-
-# remove organic or conventional notation so just genospecies category (gsA,gsC or gsE). 
-ANI_compind$inoc_geno <- sub('.', '', ANI_compind$inoc_geno)
-ANI_compind$sup_geno <- sub('.', '', ANI_compind$sup_geno)
 
 # adding genospecies group
 ANI_compind$geno_interaction <- ifelse(ANI_compind$inoc_geno == ANI_compind$sup_geno, 'within', 'between')
@@ -299,6 +309,11 @@ ANI_compind %>%
   group_by(inoc_geno, sup_geno) %>% 
   summarise_at(vars("ANI_6K"), mean)
 
+#  relevel factors for model so OA is the intercept
+ANI_compind$inoc_geno <- factor(ANI_compind$inoc_geno,
+                                levels = c("OA", "OC", "OE", "CC"))
+ANI_compind$sup_geno <- factor(ANI_compind$sup_geno,
+                                levels = c("OA", "OC", "OE", "CC"))
 
 # model
 lmMod <- lm(comp_ind ~ ANI_6K * inoc_geno * geno_interaction, data = ANI_compind)
@@ -310,28 +325,32 @@ summary(lmMod)
 # 
 # Residuals:
 #   Min       1Q   Median       3Q      Max 
-# -0.51033 -0.10700 -0.02236  0.08984  1.10544 
+# -0.43215 -0.11171 -0.01716  0.08896  1.10544 
 # 
 # Coefficients:
 #                                             Estimate Std. Error t value Pr(>|t|)    
-#   (Intercept)                               -264.16      48.40  -5.458 7.34e-08 ***
-#   ANI_6K                                     293.45      53.60   5.475 6.70e-08 ***
-#   inoc_genoC                                 138.73      64.92   2.137   0.0330 *  
-#   inoc_genoE                                 322.22      68.44   4.708 3.18e-06 ***
-#   geno_interactionwithin                     264.49      48.49   5.454 7.51e-08 ***
-#   ANI_6K:inoc_genoC                         -153.49      71.88  -2.135   0.0332 *  
-#   ANI_6K:inoc_genoE                         -356.50      75.81  -4.702 3.27e-06 ***
-#   ANI_6K:geno_interactionwithin             -292.80      53.69  -5.454 7.53e-08 ***
-#   inoc_genoC:geno_interactionwithin         -138.56      65.01  -2.131   0.0335 *  
-#   inoc_genoE:geno_interactionwithin         -321.67      68.78  -4.677 3.69e-06 ***
-#   ANI_6K:inoc_genoC:geno_interactionwithin   153.38      71.97   2.131   0.0335 *  
-#   ANI_6K:inoc_genoE:geno_interactionwithin   355.99      76.13   4.676 3.70e-06 ***
+#  (Intercept)                                -264.16      48.32  -5.467 7.02e-08 ***
+#   ANI_6K                                      293.45      53.51   5.484 6.41e-08 ***
+#   inoc_genoOC                                 263.83      48.32   5.460 7.28e-08 ***
+#   inoc_genoOE                                 322.22      68.33   4.716 3.08e-06 ***
+#   inoc_genoCC                                 265.79      48.32   5.501 5.86e-08 ***
+#   geno_interactionwithin                      264.49      48.42   5.463 7.19e-08 ***
+#   ANI_6K:inoc_genoOC                         -292.01      53.51  -5.457 7.41e-08 ***
+#   ANI_6K:inoc_genoOE                         -356.50      75.69  -4.710 3.16e-06 ***
+#   ANI_6K:inoc_genoCC                         -294.17      53.51  -5.497 5.97e-08 ***
+#   ANI_6K:geno_interactionwithin              -292.80      53.60  -5.462 7.20e-08 ***
+#   inoc_genoOC:geno_interactionwithin         -261.34      48.49  -5.390 1.06e-07 ***
+#   inoc_genoOE:geno_interactionwithin         -321.67      68.67  -4.684 3.56e-06 ***
+#   inoc_genoCC:geno_interactionwithin         -265.43      49.06  -5.410 9.49e-08 ***
+#   ANI_6K:inoc_genoOC:geno_interactionwithin   289.53      53.67   5.394 1.03e-07 ***
+#   ANI_6K:inoc_genoOE:geno_interactionwithin   355.99      76.01   4.684 3.57e-06 ***
+#   ANI_6K:inoc_genoCC:geno_interactionwithin   293.87      54.20   5.422 8.92e-08 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # 
-# Residual standard error: 0.1778 on 540 degrees of freedom
-# Multiple R-squared:  0.2961,	Adjusted R-squared:  0.2817 
-# F-statistic: 20.65 on 11 and 540 DF,  p-value: < 2.2e-16
+# Residual standard error: 0.1775 on 536 degrees of freedom
+# Multiple R-squared:  0.3036,	Adjusted R-squared:  0.2841 
+# F-statistic: 15.58 on 15 and 536 DF,  p-value: < 2.2e-16
 
 
 # checking assumptions
@@ -341,10 +360,21 @@ plot(lmMod)
 lmMod.aov <- aov(lmMod)
 summary(lmMod.aov)
 
+#                                      Df Sum Sq Mean Sq F value   Pr(>F)    
+#   ANI_6K                              1  0.138  0.1379   4.373   0.0370 *  
+#   inoc_geno                           3  5.069  1.6895  53.596  < 2e-16 ***
+#   geno_interaction                    1  0.009  0.0089   0.284   0.5944    
+#   ANI_6K:inoc_geno                    3  0.919  0.3063   9.715 2.98e-06 ***
+#   ANI_6K:geno_interaction             1  0.000  0.0000   0.001   0.9821    
+#   inoc_geno:geno_interaction          3  0.254  0.0845   2.681   0.0462 *  
+#   ANI_6K:inoc_geno:geno_interaction   3  0.977  0.3256  10.330 1.28e-06 ***
+#   Residuals                         536 16.896  0.0315                     
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 
 
-# model no interaction for geno_interaction
+# model no interaction for ANI_6K interaction
 lmMod_noint <- lm(comp_ind ~ ANI_6K + inoc_geno * geno_interaction, data = ANI_compind) 
 summary(lmMod_noint)
 
@@ -355,15 +385,15 @@ anova(lmMod_noint, lmMod)
 # 
 # Model 1: comp_ind ~ ANI_6K + inoc_geno * geno_interaction
 # Model 2: comp_ind ~ ANI_6K * inoc_geno * geno_interaction
-# Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
-# 1    545 18.334                                  
-# 2    540 17.078  5    1.2559 7.9424 3.099e-07 ***
+#   Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
+# 1    543 18.194                                  
+# 2    536 16.896  7    1.2972 5.8785 1.357e-06 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 
 # model no interaction for geno_interaction
-lmMod_noint2 <- lm(comp_ind ~ ANI_6K + inoc_geno * geno_interaction, data = ANI_compind) 
+lmMod_noint2 <- lm(comp_ind ~ ANI_6K * inoc_geno + geno_interaction, data = ANI_compind) 
 summary(lmMod_noint2)
 
 # anova to compare model with and without interaction
@@ -371,51 +401,52 @@ anova(lmMod_noint2, lmMod)
 
 # Analysis of Variance Table
 # 
-# Model 1: comp_ind ~ ANI_6K + inoc_geno * geno_interaction
+# Model 1: comp_ind ~ ANI_6K * inoc_geno + geno_interaction
 # Model 2: comp_ind ~ ANI_6K * inoc_geno * geno_interaction
 # Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
-# 1    545 18.334                                  
-# 2    540 17.078  5    1.2559 7.9424 3.099e-07 ***
+# 1    543 18.127                                  
+# 2    536 16.896  7    1.2305 5.5763 3.232e-06 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 
-
 # genospecies palette
-geno_palette <- c("#466EA9","#4D9A7A", "#DA367E")
+geno_palette <- c("#466EA9", "#4D9A7A", "#DA367E", "#9ACD32")
 
 
 # make new labels
 ANI_compind$geno_interaction_3 <- ANI_compind$geno_interaction_2
 
 ANI_compind$geno_interaction_3 <- factor(ANI_compind$geno_interaction_3, 
-                                         levels = c("A between", "A within", 
-                                                    "C between", "C within", 
-                                                    "E between", "E within"),
-                                         labels = c("gsA - other gs", "gsA - gsA", 
-                                                    "gsC - other gs", "gsC - gsC", 
-                                                    "gsE - other gs", "gsE - gsE"))
+                                         levels = c("OA between", "OA within", 
+                                                    "OC between", "OC within", 
+                                                    "OE between", "OE within",
+                                                    "CC between", "CC within"),
+                                         labels = c("OA - other gs group", "OA - OA", 
+                                                    "OC - other gs group", "OC - OC", 
+                                                    "OE - other gs group", "OE - OE",
+                                                    "CC - other gs group", "CC - CC"))
 
 ANI_compind$geno_interaction <- factor(ANI_compind$geno_interaction, 
                                          levels = c("between", "within"),
-                                         labels = c("between genospecies", "within genospecies"))
+                                         labels = c("between genospecies group", "within genospecies group"))
 
 
 # find minimum, maximum and mean "between genospecies" ANI
-min(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
-# [1] 0.9680203
-max(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
-# 0.9999338
-mean(ANI_compind[ANI_compind$geno_interaction == "within genospecies", c("ANI_6K")])
-# [1] 0.9781515
+min(ANI_compind[ANI_compind$geno_interaction == "within genospecies group", c("ANI_6K")])
+# [1] 0.968164
+max(ANI_compind[ANI_compind$geno_interaction == "within genospecies group", c("ANI_6K")])
+# [1] 0.9999338
+mean(ANI_compind[ANI_compind$geno_interaction == "within genospecies group", c("ANI_6K")])
+# [1] 0.9829003
 
 # find minimum, maximum and between "within genospecies" ANI
-min(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
+min(ANI_compind[ANI_compind$geno_interaction == "between genospecies group", c("ANI_6K")])
 # [1] 0.9017105
-max(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
-# [1] 0.9039217
-mean(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6K")])
-# [1] 0.9029475
+max(ANI_compind[ANI_compind$geno_interaction == "between genospecies group", c("ANI_6K")])
+# [1] 0.9767628
+mean(ANI_compind[ANI_compind$geno_interaction == "between genospecies group", c("ANI_6K")])
+# [1] 0.9162912
 
 # plot: ANI vs RGI as inoculant. facet graph for between genospecies and within genospecies interactions
 (graph_lmMod_facet <- ggplot(ANI_compind, aes(x = ANI_6K, y = comp_ind,
@@ -437,6 +468,32 @@ mean(ANI_compind[ANI_compind$geno_interaction == "between genospecies", c("ANI_6
           strip.text.x = element_text(size = 16)))
 #function to save specific ggplot graph.  additional parameters(width=,height=,units='cm')
 ggsave('../../data/intermediate_data/supernatant_data/ANIvsRGI_genospeciesfacet.pdf', plot = graph_lmMod_facet, height = 20, width = 25, units = 'cm')
+
+
+# plot: ANI vs RGI as inoculant. facet graph for between genospecies and within genospecies interactions
+# zoomed in on between genospecies
+(graph_lmMod_facet2 <- ggplot(ANI_compind[ANI_compind$geno_interaction == "between genospecies group",], aes(x = ANI_6K, y = comp_ind,
+                                              colour = inoc_geno)) +
+    geom_point(alpha = 0.1, size = 3) +
+    geom_smooth(method = lm, se = FALSE) +
+    scale_colour_manual(values = geno_palette) +
+    labs(x = "Average Nucleotide Identity (6,529 genes, 441,287 SNPs)", 
+         y = "Relative Growth Index (RGI)",
+         colour = "Inoculant\ngenospecies") +
+    coord_cartesian(xlim = c(0.9015, 0.904)) +
+    theme_bw() +
+    theme(legend.title = element_text(size = 14),
+          legend.text=element_text(size=14),
+          axis.text.x = element_text(size = 14),
+          axis.text.y = element_text(size = 14),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          strip.text.x = element_text(size = 16)))
+#function to save specific ggplot graph.  additional parameters(width=,height=,units='cm')
+ggsave('../../data/intermediate_data/supernatant_data/ANIvsRGI_genospeciesfacet_xlimedit.pdf', plot = graph_lmMod_facet2, height = 20, width = 25, units = 'cm')
+
+
+
 
 
 # replot data without SM168A and SM154C.
@@ -469,6 +526,28 @@ ANI_compind_168A154Crm <- ANI_compind %>%
 ggsave('../../data/intermediate_data/supernatant_data/ANIvsRGI_genospeciesfacet_168A154Crm.pdf', plot = graph_lmMod_facet_168A154Crm, height = 20, width = 25, units = 'cm')
 
 
+# replot: ANI vs RGI as inoculant without SM168A and SM154C. facet graph for between genospecies and within genospecies interactions
+# zoomed in on between genospecies
+(graph_lmMod_facet_168A154Crm2 <- ggplot(ANI_compind_168A154Crm[ANI_compind_168A154Crm$geno_interaction == "between genospecies group",], aes(x = ANI_6K, y = comp_ind, colour = inoc_geno)) +
+    geom_point(alpha = 0.1, size = 3) +
+    geom_smooth(method = lm, se = FALSE) +
+    scale_colour_manual(values = geno_palette) +
+    labs(x = "Average Nucleotide Identity (6,529 genes, 441,287 SNPs)", 
+         y = "Relative Growth Index (RGI)",
+         colour = "Inoculant\ngenospecies") +
+    xlim(0.9015, 0.904) +
+    theme_bw() +
+    theme(legend.title = element_text(size = 14),
+          legend.text=element_text(size=14),
+          axis.text.x = element_text(size = 14),
+          axis.text.y = element_text(size = 14),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          strip.text.x = element_text(size = 16)))
+#function to save specific ggplot graph.  additional parameters(width=,height=,units='cm')
+ggsave('../../data/intermediate_data/supernatant_data/ANIvsRGI_genospeciesfacet_168A154Crm_xlimedit.pdf', plot = graph_lmMod_facet_168A154Crm2, height = 20, width = 25, units = 'cm')
+
+
 # emmeans RGI vs ANI, for each genospecies and between/within combinations --------------
 
 #library(emmeans)
@@ -485,38 +564,52 @@ summary(lmMod)
 summary(emtrends(lmMod, pairwise ~ inoc_geno*geno_interaction, var = "ANI_6K"), infer=TRUE)
 
 # $emtrends
-# inoc_geno geno_interaction ANI_6K.trend    SE  df lower.CL upper.CL t.ratio p.value
-# A         between               293.454 53.60 540   188.17   398.74  5.475  <.0001 ***
-# C         between               139.966 47.90 540    45.87   234.06  2.922  0.0036 **
-# E         between               -63.050 53.62 540  -168.38    42.27 -1.176  0.2401 
-# A         within                  0.654  3.16 540    -5.54     6.85  0.207  0.8358 
-# C         within                  0.541  1.61 540    -2.63     3.71  0.335  0.7375 
-# E         within                  0.138  6.19 540   -12.02    12.29  0.022  0.9822 
+# inoc_geno geno_interaction ANI_6K.trend     SE  df lower.CL upper.CL t.ratio p.value
+# OA        between               293.454 53.510 536   188.34  398.569  5.484  <.0001 ***
+# OC        between                 1.443  0.500 536     0.46    2.425  2.883  0.0041 **
+# OE        between               -63.050 53.530 536  -168.21   42.105 -1.178  0.2394 
+# CC        between                -0.718  0.514 536    -1.73    0.292 -1.397  0.1630 
+# OA        within                  0.654  3.150 536    -5.53    6.842  0.208  0.8356 
+# OC        within                 -1.823  2.694 536    -7.12    3.470 -0.677  0.4990 
+# OE        within                  0.138  6.178 536   -12.00   12.273  0.022  0.9822 
+# CC        within                  0.352  7.997 536   -15.36   16.062  0.044  0.9649 
 # 
 # Confidence level used: 0.95 
 # 
 # $contrasts
-# contrast              estimate    SE  df lower.CL upper.CL t.ratio p.value
-# A between - C between  153.489 71.88 540   -52.10    359.1  2.135  0.2707 
-# A between - E between  356.505 75.81 540   139.68    573.3  4.702  <.0001 ***
-# A between - A within   292.800 53.69 540   139.25    446.4  5.454  <.0001 ***
-# A between - C within   292.914 53.62 540   139.56    446.3  5.463  <.0001 ***
-# A between - E within   293.316 53.95 540   139.01    447.6  5.437  <.0001 ***
-# C between - E between  203.016 71.90 540    -2.62    408.6  2.824  0.0553 .
-# C between - A within   139.311 48.01 540     2.01    276.6  2.902  0.0444 *
-# C between - C within   139.425 47.93 540     2.35    276.5  2.909  0.0436 *
-# C between - E within   139.827 48.30 540     1.69    278.0  2.895  0.0453 *
-# E between - A within   -63.705 53.71 540  -217.32     89.9 -1.186  0.8435 
-# E between - C within   -63.591 53.64 540  -217.01     89.8 -1.185  0.8438 
-# E between - E within   -63.189 53.97 540  -217.55     91.2 -1.171  0.8507 
-# A within - C within      0.113  3.54 540   -10.02     10.2  0.032  1.0000 
-# A within - E within      0.516  6.95 540   -19.35     20.4  0.074  1.0000 
-# C within - E within      0.403  6.39 540   -17.89     18.7  0.063  1.0000 
+# contrast                estimate     SE  df  lower.CL upper.CL t.ratio p.value
+# OA between - OC between  292.012 53.512 536  129.1784   454.85  5.457  <.0001 ***
+# OA between - OE between  356.505 75.689 536  126.1890   586.82  4.710  0.0001 ***
+# OA between - CC between  294.173 53.512 536  131.3390   457.01  5.497  <.0001 ***
+# OA between - OA within   292.800 53.602 536  129.6920   455.91  5.462  <.0001 ***
+# OA between - OC within   295.277 53.577 536  132.2448   458.31  5.511  <.0001 ***
+# OA between - OE within   293.316 53.865 536  129.4084   457.22  5.445  <.0001 ***
+# OA between - CC within   293.103 54.104 536  128.4678   457.74  5.417  <.0001 ***
+# OC between - OE between   64.493 53.533 536  -98.4035   227.39  1.205  0.9304 
+# OC between - CC between    2.161  0.718 536   -0.0224     4.34  3.012  0.0547 .
+# OC between - OA within     0.788  3.190 536   -8.9176    10.49  0.247  1.0000 
+# OC between - OC within     3.265  2.740 536   -5.0733    11.60  1.192  0.9342 
+# OC between - OE within     1.304  6.198 536  -17.5551    20.16  0.210  1.0000 
+# OC between - CC within     1.091  8.013 536  -23.2919    25.47  0.136  1.0000 
+# OE between - CC between  -62.332 53.533 536 -225.2289   100.56 -1.164  0.9416 
+# OE between - OA within   -63.705 53.623 536 -226.8759    99.47 -1.188  0.9352 
+# OE between - OC within   -61.227 53.598 536 -224.3232   101.87 -1.142  0.9471 
+# OE between - OE within   -63.189 53.886 536 -227.1592   100.78 -1.173  0.9394 
+# OE between - CC within   -63.402 54.124 536 -228.0995   101.29 -1.171  0.9397 
+# CC between - OA within    -1.373  3.192 536  -11.0854     8.34 -0.430  0.9999 
+# CC between - OC within     1.105  2.743 536   -7.2423     9.45  0.403  0.9999 
+# CC between - OE within    -0.857  6.199 536  -19.7196    18.01 -0.138  1.0000 
+# CC between - CC within    -1.070  8.014 536  -25.4556    23.32 -0.134  1.0000 
+# OA within - OC within      2.477  4.145 536  -10.1366    15.09  0.598  0.9989 
+# OA within - OE within      0.516  6.934 536  -20.5850    21.62  0.074  1.0000 
+# OA within - CC within      0.302  8.595 536  -25.8526    26.46  0.035  1.0000 
+# OC within - OE within     -1.961  6.740 536  -22.4692    18.55 -0.291  1.0000 
+# OC within - CC within     -2.175  8.439 536  -27.8538    23.50 -0.258  1.0000 
+# OE within - CC within     -0.214 10.105 536  -30.9635    30.54 -0.021  1.0000 
 # 
 # Confidence level used: 0.95 
-# Conf-level adjustment: tukey method for comparing a family of 6 estimates 
-# P value adjustment: tukey method for comparing a family of 6 estimates 
-
+# Conf-level adjustment: tukey method for comparing a family of 8 estimates 
+# P value adjustment: tukey method for comparing a family of 8 estimates 
 
 
 
@@ -534,39 +627,54 @@ summary(lmMod_168A154Crm)
 # in the result output ANI_6K.trend refers to the slope value. 
 summary(emtrends(lmMod_168A154Crm, pairwise ~ inoc_geno*geno_interaction, var = "ANI_6K"), infer=TRUE)
 
+ 
 # $emtrends
-# inoc_geno geno_interaction    ANI_6K.trend    SE  df lower.CL upper.CL t.ratio p.value
-# A         between genospecies      191.038 53.66 450    85.58   296.50  3.560  0.0004 ***
-# C         between genospecies      138.262 42.74 450    54.27   222.25  3.235  0.0013 **
-# E         between genospecies      -31.103 54.30 450  -137.82    75.61 -0.573  0.5671 
-# A         within genospecies         3.068  3.20 450    -3.23     9.36  0.958  0.3386 
-# C         within genospecies         0.541  1.33 450    -2.07     3.15  0.407  0.6839 
-# E         within genospecies        -0.842  6.34 450   -13.31    11.62 -0.133  0.8945 
+# inoc_geno geno_interaction          ANI_6K.trend     SE  df lower.CL upper.CL t.ratio p.value
+# OA        between genospecies group      191.038 53.244 446   86.398  295.678  3.588  0.0004 ***
+# OC        between genospecies group        1.763  0.425 446    0.928    2.599  4.146  <.0001 ***
+# OE        between genospecies group      -31.103 53.877 446 -136.988   74.782 -0.577  0.5640 
+# CC        between genospecies group       -0.514  0.439 446   -1.376    0.347 -1.173  0.2414 
+# OA        within genospecies group         3.068  3.178 446   -3.177    9.313  0.966  0.3348 
+# OC        within genospecies group        -1.823  2.204 446   -6.155    2.510 -0.827  0.4087 
+# OE        within genospecies group        -0.842  6.294 446  -13.211   11.527 -0.134  0.8936 
+# CC        within genospecies group         0.352  6.543 446  -12.508   13.211  0.054  0.9571 
 # 
 # Confidence level used: 0.95 
 # 
 # $contrasts
-# contrast                                      estimate    SE  df lower.CL upper.CL t.ratio p.value
-# A between genospecies - C between genospecies    52.78 68.60 450  -143.56    249.1  0.769  0.9725 
-# A between genospecies - E between genospecies   222.14 76.34 450     3.65    440.6  2.910  0.0437 *
-# A between genospecies - A within genospecies    187.97 53.76 450    34.11    341.8  3.497  0.0068 **
-# A between genospecies - C within genospecies    190.50 53.68 450    36.87    344.1  3.549  0.0057 **
-# A between genospecies - E within genospecies    191.88 54.04 450    37.23    346.5  3.551  0.0056 **
-# C between genospecies - E between genospecies   169.36 69.10 450   -28.40    367.1  2.451  0.1413 
-# C between genospecies - A within genospecies    135.19 42.86 450    12.54    257.9  3.155  0.0211 *
-# C between genospecies - C within genospecies    137.72 42.76 450    15.35    260.1  3.221  0.0171 *
-# C between genospecies - E within genospecies    139.10 43.21 450    15.45    262.8  3.220  0.0172 *
-# E between genospecies - A within genospecies    -34.17 54.39 450  -189.85    121.5 -0.628  0.9889 
-# E between genospecies - C within genospecies    -31.64 54.32 450  -187.10    123.8 -0.583  0.9922 
-# E between genospecies - E within genospecies    -30.26 54.67 450  -186.73    126.2 -0.554  0.9938 
-# A within genospecies - C within genospecies       2.53  3.47 450    -7.39     12.4  0.729  0.9783 
-# A within genospecies - E within genospecies       3.91  7.11 450   -16.43     24.2  0.550  0.9940 
-# C within genospecies - E within genospecies       1.38  6.48 450   -17.17     19.9  0.213  0.9999 
+# contrast                                                    estimate     SE  df lower.CL upper.CL t.ratio p.value
+# OA between genospecies group - OC between genospecies group  189.275 53.246 446   27.121   351.43  3.555  0.0099 *
+# OA between genospecies group - OE between genospecies group  222.141 75.748 446   -8.540   452.82  2.933  0.0686 .
+# OA between genospecies group - CC between genospecies group  191.552 53.246 446   29.399   353.71  3.598  0.0085 *
+# OA between genospecies group - OA within genospecies group   187.970 53.339 446   25.533   350.41  3.524  0.0110 *
+# OA between genospecies group - OC within genospecies group   192.861 53.290 446   30.574   355.15  3.619  0.0079 *
+# OA between genospecies group - OE within genospecies group   191.880 53.615 446   28.603   355.16  3.579  0.0091 *
+# OA between genospecies group - CC within genospecies group   190.686 53.645 446   27.318   354.05  3.555  0.0099 *
+# OC between genospecies group - OE between genospecies group   32.866 53.879 446 -131.216   196.95  0.610  0.9987 
+# OC between genospecies group - CC between genospecies group    2.278  0.611 446    0.417     4.14  3.729  0.0053 *
+# OC between genospecies group - OA within genospecies group    -1.305  3.206 446  -11.069     8.46 -0.407  0.9999 
+# OC between genospecies group - OC within genospecies group     3.586  2.245 446   -3.251    10.42  1.597  0.7519 
+# OC between genospecies group - OE within genospecies group     2.605  6.308 446  -16.606    21.82  0.413  0.9999 
+# OC between genospecies group - CC within genospecies group     1.411  6.557 446  -18.557    21.38  0.215  1.0000 
+# OE between genospecies group - CC between genospecies group  -30.588 53.879 446 -194.671   133.49 -0.568  0.9992 
+# OE between genospecies group - OA within genospecies group   -34.171 53.971 446 -198.533   130.19 -0.633  0.9984 
+# OE between genospecies group - OC within genospecies group   -29.280 53.922 446 -193.494   134.93 -0.543  0.9994 
+# OE between genospecies group - OE within genospecies group   -30.261 54.244 446 -195.453   134.93 -0.558  0.9993 
+# OE between genospecies group - CC within genospecies group   -31.454 54.273 446 -196.737   133.83 -0.580  0.9991 
+# CC between genospecies group - OA within genospecies group    -3.583  3.208 446  -13.352     6.19 -1.117  0.9530 
+# CC between genospecies group - OC within genospecies group     1.309  2.248 446   -5.537     8.15  0.582  0.9991 
+# CC between genospecies group - OE within genospecies group     0.328  6.309 446  -18.886    19.54  0.052  1.0000 
+# CC between genospecies group - CC within genospecies group    -0.866  6.558 446  -20.838    19.11 -0.132  1.0000 
+# OA within genospecies group - OC within genospecies group      4.891  3.868 446   -6.887    16.67  1.265  0.9113 
+# OA within genospecies group - OE within genospecies group      3.910  7.051 446  -17.561    25.38  0.555  0.9993 
+# OA within genospecies group - CC within genospecies group      2.716  7.274 446  -19.436    24.87  0.373  1.0000 
+# OC within genospecies group - OE within genospecies group     -0.981  6.669 446  -21.290    19.33 -0.147  1.0000 
+# OC within genospecies group - CC within genospecies group     -2.175  6.905 446  -23.202    18.85 -0.315  1.0000 
+# OE within genospecies group - CC within genospecies group     -1.194  9.079 446  -28.843    26.46 -0.131  1.0000 
 # 
 # Confidence level used: 0.95 
-# Conf-level adjustment: tukey method for comparing a family of 6 estimates 
-# P value adjustment: tukey method for comparing a family of 6 estimates 
-
+# Conf-level adjustment: tukey method for comparing a family of 8 estimates 
+# P value adjustment: tukey method for comparing a family of 8 estimates 
 
 
 
