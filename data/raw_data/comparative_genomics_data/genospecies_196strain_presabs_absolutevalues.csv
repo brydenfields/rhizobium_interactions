@@ -1,0 +1,12 @@
+,gsA_present,gsA_absent,gsB_present,gsB_absent,gsC_present,gsC_absent,gsD_present,gsD_absent,gsE_present,gsE_absent
+bisR,8,24,7,25,4,112,0,5,0,11
+traI,7,25,0,32,2,114,0,5,0,11
+traR,8,24,7,25,4,112,0,5,0,11
+raiI,0,32,32,0,115,1,0,5,6,5
+raiR,0,32,0,32,114,2,0,5,5,6
+rhiI,0,32,0,32,91,25,0,5,0,11
+rhiR,0,32,0,32,92,24,0,5,0,11
+rhiA,0,32,0,32,91,25,0,5,0,11
+rhiB,0,32,0,32,91,25,0,5,0,11
+rhiC,0,32,0,32,91,25,0,5,0,11
+vbsS,12,20,32,0,8,108,3,2,11,0
