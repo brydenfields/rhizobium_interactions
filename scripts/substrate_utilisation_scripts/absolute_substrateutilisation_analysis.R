@@ -1,10 +1,11 @@
 # Author: Bryden Fields
 # Email: bryden.fields@york.ac.uk
-# Last updated: 02/02/2021
+# Last updated: 01/07/2021
 
 # Initial setup -------------------------------------------------------------------
 
-setwd('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/scripts/supernatant_scripts')
+#set the working directory to the directory this script is in.
+#setwd("~/what/ever/folder/you/are/working/from") 
 
 library(tidyverse)
 library(RColorBrewer)
@@ -52,11 +53,11 @@ RGI_AWCD <- read.csv('../../data/raw_data/substrate_utilisation_data/compind_sup
 
 # calculate mean OD for each strain by resource group
 data_strainmean <-  summarySE(data, measurevar = 'OD', groupvars = c('strain', 'geno', 'resource_group'))
-write.csv(data_strainmean, file = '../../data/intermediate_data/substrate_utilisation_data/resourcegroup_strainmeanOD_absolute.csv')
+#write.csv(data_strainmean, file = '../../data/intermediate_data/substrate_utilisation_data/resourcegroup_strainmeanOD_absolute.csv')
 
 # calculate mean OD for each strain by resource characteristics
 data_strainmean2 <-  summarySE(data, measurevar = 'OD', groupvars = c('strain', 'geno', 'resource_characteristics'))
-write.csv(data_strainmean2, file = '../../data/intermediate_data/substrate_utilisation_data/resourcecharacteristics_strainmeanOD_absolute.csv')
+#write.csv(data_strainmean2, file = '../../data/intermediate_data/substrate_utilisation_data/resourcecharacteristics_strainmeanOD_absolute.csv')
 
 # calculate mean OD for each genospecies by resource
 data_means <- summarySE(data, measurevar = 'OD', groupvars = c('geno', 'resource_group', 'resource'))
@@ -107,20 +108,20 @@ genoPalette <- c(CC = "#9ACD32", OA = "#466EA9", OC = "#4D9A7A", OE ="#DA367E")
     theme(legend.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, vjust=1), 
           text = element_text(size=6), legend.text = element_text(size=6)))
 #function to save specific ggplot graph.  additional parameters(width=,height=,units='cm')
-ggsave('../../data/intermediate_data/substrate_utilisation_data/allgeno_resourcecomparison.pdf', plot = allgeno_comparison, width = 25, height = 10, units = 'cm')
+#ggsave('../../data/intermediate_data/substrate_utilisation_data/allgeno_resourcecomparison.pdf', plot = allgeno_comparison, width = 25, height = 10, units = 'cm')
 
 
 #graph for AWCD - identify strains that are more generalist
 awcd_no159 <- data %>%
   filter(strain %in% c("41", "53", "57", "67", "74", "77", 
                        "137B","144A","145B","152A", "152B", "154C",
-                       "122A","126A","147A","157B","158", "165A", "170C",
+                       "122A","126B","147A","157B","158", "165A", "170C",
                        "135A", "135B", "149A", "168A"))
 
 # relevel strain order for graphs
 awcd_no159$strain <- factor(awcd_no159$strain, levels = c("41", "53", "57", "67",
                                                     "74", "77", "137B", "144A", "145B", "152A",
-                                                    "152B", "154C", "122A", "126A", 
+                                                    "152B", "154C", "122A", "126B", 
                                                     "147A", "157B", "158", "165A",
                                                     "170C", "135A", "135B", "149A", 
                                                     "159", "168A"))
@@ -133,7 +134,7 @@ awcd_no159$strain <- paste0("SM", awcd_no159$strain)
 RGI_AWCD <- RGI_AWCD %>%
   filter(strain %in% c("41", "53", "57", "67", "74", "77", 
                        "137B","144A","145B","152A", "152B", "154C",
-                       "122A","126A","147A","157B","158", "165A", "170C",
+                       "122A","126B","147A","157B","158", "165A", "170C",
                        "135A", "135B", "149A", "168A"))
 
 
@@ -166,7 +167,232 @@ cor.test(RGI_AWCD$comp_ind_inoc, RGI_AWCD$AWCD)
 #   cor 
 # 0.5525074 
 
+# after 126b was added (accidentally missed)
+# data:  RGI_AWCD$comp_ind_inoc and RGI_AWCD$AWCD
+# t = 3.2269, df = 21, p-value = 0.004043
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#   0.2144301 0.7984541
+# sample estimates:
+#   cor 
+# 0.5757431 
 
+
+
+# phylogenetic-corrected regression.
+# code from:
+# https://static1.squarespace.com/static/5459da8ae4b042d9849b7a7b/t/57ea64eae58c62718aa34769/1474979059782/Nesin_Winternitz_Practical_1and2.pdf
+# https://cran.r-project.org/web/packages/caper/vignettes/caper.pdf
+# https://www2.clarku.edu/faculty/pbergmann/Resources/Biol206%20-%20Lab10-%20Phylogenetic%20Regression.pdf
+
+library(ape)
+library(nlme)
+library(geiger)
+library(caper)
+library(phytools)
+
+# using RGI_AWCD dataframe.But will need to change the strain names to match those in the tree we load in.
+# but make strain names the row names
+RGI_AWCD2 <- RGI_AWCD[c("strain", "comp_ind_inoc", "AWCD")]
+row.names(RGI_AWCD2) <- RGI_AWCD2$strain
+
+# read in tree
+tree <- read.tree('../../data/intermediate_data/phylogeny_analysis/305_core_genes_24subset.nw')
+
+plot(tree)
+is.binary.tree(tree)
+# [1] TRUE
+is.ultrametric(tree)
+# [1] FALSE
+is.rooted(tree)
+# [1] TRUE - Checking if our tree is rooted, and that the root is non-zero length:
+# Now we’ll set any zero-length branches to one-ten-thousandth of the tree size
+tree$edge.length[tree$edge.length==0]<-max(nodeHeights(tree))*1e-4
+
+
+# We can use the branch lengths of a non-ultrametric tree and transform them to be ultrametric. The first step is to see how long the tree is from root to tip. Then we can use that information to generate an ultrametric tree that is the same length. 
+# gives you distances of each node from the base of the tree (the base is at zero).
+# The first column of the output is the node Height from the base of the tree to the ancestral side of a given branch, and the second is the height from the base to the descendent side of each branch. If you take the maximum of this object (the greatest number), you have the height of the entire tree.
+nodeHeights(tree)
+max(nodeHeights(tree))
+
+# use the chronopl function (part of the ape package) to transform the tree to a chronogram, which is another term for an ultrametric tree. 
+ultra_tree <- chronopl(tree, lambda = 1, age.min=max(nodeHeights(tree)))
+is.ultrametric(ultra_tree)
+# [1] TRUE
+is.binary(ultra_tree)
+# [1] TRUE
+is.rooted(ultra_tree)
+# [1] TRUE
+plot(ultra_tree)
+
+# remove the first part of the node name before and up to the '-' so then it matches the strain names in the RGI_AWCD dataframe
+ultra_tree$tip.label
+ultra_tree$tip.label <- gsub(".*-","",ultra_tree$tip.label)
+plot(ultra_tree)
+
+# establish that we have the same species in our data as in the tree
+obj <- name.check(ultra_tree, RGI_AWCD2)
+obj
+# 159 is missing - this strain had to be removed because contaminated so we will remove it from the tree for this analysis also.
+tree_no159 <- drop.tip(ultra_tree, obj$tree_not_data)
+name.check(tree_no159, RGI_AWCD2)
+# [1] "OK"
+plot(tree_no159)
+
+# plot data to see distributions
+hist(RGI_AWCD2$AWCD)
+hist(RGI_AWCD2$comp_ind_inoc)
+
+# order data in dataframe as in tree
+RGI_AWCD2 <- RGI_AWCD2[match(tree_no159$tip.label, RGI_AWCD2$strain),]
+
+
+# We can perform a non-phylogenetic regression to see what happens. lm=linear model (OLS regression)
+model1<-lm(AWCD ~ comp_ind_inoc, data=RGI_AWCD2)
+summary(model1)
+
+# Call:
+#   lm(formula = AWCD ~ comp_ind_inoc, data = RGI_AWCD2)
+# 
+# Residuals:
+#   Min        1Q    Median        3Q       Max 
+# -0.071047 -0.024814 -0.001045  0.028331  0.062808 
+# 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)   
+# (Intercept)   -0.10921    0.05197  -2.101  0.04786 * 
+#   comp_ind_inoc  0.16797    0.05205   3.227  0.00404 **
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.0366 on 21 degrees of freedom
+# Multiple R-squared:  0.3315,	Adjusted R-squared:  0.2996 
+# F-statistic: 10.41 on 1 and 21 DF,  p-value: 0.004043
+
+# plot the model
+plot(AWCD ~ comp_ind_inoc, data=RGI_AWCD2)
+abline(model1, col="Red")
+
+
+
+# phylosig (phytools) checks if lambda is significantly different from 0 for AWCD
+phylosig(tree_no159, RGI_AWCD2$AWCD, method = "lambda", test = TRUE)
+
+# [1] "x has no names; assuming x is in the same order as tree$tip.label"
+# 
+# Phylogenetic signal lambda : 0.421513 
+# logL(lambda) : 41.2434 
+# LR(lambda=0) : 2.7753 
+# P-value (based on LR test) : 0.0957287
+
+# A non-significant p-value tells us that there is unlikely to be significant phylogenetic signal.
+# Our lambda estimate is closer to 0 than 1 (just), suggesting there is some small amount of phylogenetic signal but we also have a (just) non-significant p-value there is essentially little to no significant phylogenetic signal. 
+
+# then using phylosig for RGI of inoculant
+phylosig(tree_no159, RGI_AWCD2$comp_ind_inoc, method = "lambda", test = TRUE)
+
+# [1] "x has no names; assuming x is in the same order as tree$tip.label"
+# 
+# Phylogenetic signal lambda : 0.931915 
+# logL(lambda) : 15.0152 
+# LR(lambda=0) : 6.98575 
+# P-value (based on LR test) : 0.00821612 
+
+# From this we see lamda is close to 1, and we have a significant p-value. Therefore we should consider that RGI has a phylogenetic signal when conducting our analyses. 
+
+# Phylogenetic signal with Bloomberg’s K
+#  K=1 indicating Brownian motion evolution. K > 1 indicates that species are more similar than expected under random drift, and K < 1 indicates species are less similar (more divergent) than expected under random drift. Essentially, larger K indicates stronger phylogenetic signal.
+
+phylosig(tree_no159, RGI_AWCD2$AWCD, method = "K", test = TRUE)
+# Phylogenetic signal K : 0.00204417 
+# P-value (based on 1000 randomizations) : 0.559 
+phylosig(tree_no159, RGI_AWCD2$comp_ind_inoc, method = "K", test = TRUE)
+# Phylogenetic signal K : 0.00821952 
+# P-value (based on 1000 randomizations) : 0.18 
+
+# fit different models of trait evolution to see which is best fitting
+bm.AWCD <- fitContinuous(phy=tree_no159, dat=RGI_AWCD2[3], model =
+                                 "BM")
+ou.AWCD <- fitContinuous(phy=tree_no159, dat=RGI_AWCD2[3], model =
+                                 "OU")
+# compare AIC values
+bm.AWCD$opt$aicc
+# [1] 23.2228
+ou.AWCD$opt$aicc
+# [1] 25.28445
+# brownian motion slightly more support than Ornstein-Uhlenbeck
+
+bm.RGI <- fitContinuous(phy=tree_no159, dat=RGI_AWCD2[2], model =
+                           "BM")
+ou.RGI <- fitContinuous(phy=tree_no159, dat=RGI_AWCD2[2], model =
+                           "OU")
+# compare AIC values
+bm.RGI$opt$aicc
+# [1] 47.89772
+ou.RGI$opt$aicc
+# [1] 49.96624
+# brownian motion slightly more support than Ornstein-Uhlenbeck
+
+# make caper object to combine phylogeny and data
+combined_data <- comparative.data(tree_no159, RGI_AWCD2, names.col = "strain",
+                                  vcv=TRUE, na.omit=FALSE, warn.dropped=TRUE)
+
+
+# run Phylogenetic generalized least squares regression 
+# fit a model using the function pgls that uses the maximum likelihood estimate of lambda
+# Make a model to fit an analysis investigating the metabolic capacity (AWCD) with RGI of inoculant strain.
+# define the covariance structure in correlation argument
+
+pgls_model1 <- pgls(AWCD ~ comp_ind_inoc, data = combined_data, lambda="ML")
+summary(pgls_model1)
+
+# Call:
+#   pgls(formula = AWCD ~ comp_ind_inoc, data = combined_data, lambda = "ML")
+# 
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.30826 -0.08502  0.03407  0.13679  0.44553 
+# 
+# Branch length transformations:
+#   
+#   kappa  [Fix]  : 1.000
+# lambda [ ML]  : 0.161
+# lower bound : 0.000, p = 0.2999
+# upper bound : 1.000, p = < 2.22e-16
+# 95.0% CI   : (NA, 0.655)
+# delta  [Fix]  : 1.000
+# 
+# Coefficients:
+#               Estimate   Std. Error t value Pr(>|t|)   
+# (Intercept)   -0.100991   0.053834 -1.8760 0.074630 . 
+# comp_ind_inoc  0.162538   0.053161  3.0574 0.005981 **
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.1938 on 21 degrees of freedom
+# Multiple R-squared: 0.308,	Adjusted R-squared: 0.2751 
+# F-statistic: 9.348 on 1 and 21 DF,  p-value: 0.005981 
+
+
+# Plotting the results to see if phylogenetic signal was included in the pgls model:
+
+par(mfrow=c(1,2))
+plot(AWCD ~ comp_ind_inoc, data = RGI_AWCD2)
+abline(pgls_model1, col="red")
+title("PGLS")
+plot(AWCD ~ comp_ind_inoc, data = RGI_AWCD2)
+abline(model1, col="red")
+title("original regression")
+
+# We can also plot the likelihood profile of our estimate of lambda:
+lambda.prof <- pgls.profile(pgls_model1, 'lambda')
+plot(lambda.prof)
+
+
+# normality and homogeneity of residuals etc.
+par(mfrow = c(2, 2))
+plot(pgls_model1)
 
 
 # PCA individual resources -------------------------------------------------------------------
@@ -601,30 +827,30 @@ plotNormalHistogram(AWCD_1, breaks = 20)
 qqnorm(AWCD_1, ylab="Sample Quantiles for data$AWCD")
 qqline(AWCD_1, col="red")
 
-# normality test with SM159
-shapiro.test(data$AWCD)
+# normality test without SM159
+shapiro.test(AWCD_1)
 
 
-# non-parametric one way anova
-kruskal.test(AWCD~geno, data[1:24,])
+# non-parametric one way anova (without SM159)
+kruskal.test(AWCD~geno, awcd_no159[1:23,])
 
 # Kruskal-Wallis rank sum test
 # 
 # data:  AWCD by geno
-# Kruskal-Wallis chi-squared = 11.152, df = 3, p-value = 0.01093
+# Kruskal-Wallis chi-squared = 9.3349, df = 3, p-value = 0.02515
 
 # Dunns post hoc test.
 PT2 = dunnTest(AWCD ~ geno,
-              data=data[1:24,],
+              data=awcd_no159[1:23,],
               method="bonferroni")
 PT2
 # Comparison          Z     P.unadj      P.adj
-# 1    CC - OA -0.4490731 0.653378911 1.00000000
-# 2    CC - OC -1.2407164 0.214710518 1.00000000
-# 3    OA - OC -0.7746912 0.438522127 1.00000000
-# 4    CC - OE -3.1217808 0.001797607 0.01078564 # sig
-# 5    OA - OE -2.6936063 0.007068359 0.04241016 # sig
-# 6    OC - OE -2.0494947 0.040413764 0.24248259
+# 1    CC - OA -0.4681911 0.639647942 1.00000000
+# 2    CC - OC -1.2935363 0.195825634 1.00000000
+# 3    OA - OC -0.8076715 0.419279742 1.00000000
+# 4    CC - OE -2.8932706 0.003812527 0.02287516 #sig
+# 5    OA - OE -2.4745077 0.013341994 0.08005196 #not sig
+# 6    OC - OE -1.8314802 0.067028906 0.40217343
 
 
 
@@ -642,7 +868,10 @@ qqnorm(num_substrates_data2, ylab="Sample Quantiles for num_substrates_data$num_
 qqline(num_substrates_data2, col="red")
 
 
-# or non-parametric one way anova
+# normality test without SM159
+shapiro.test(num_substrates_data2)
+
+# non-parametric one way anova
 kruskal.test(num_substrates ~ genospecies, num_substrates_data)
 
 # Kruskal-Wallis rank sum test
@@ -676,7 +905,7 @@ RGI_AWCD <- read.csv('../../data/raw_data/substrate_utilisation_data/compind_sup
 RGI_AWCD <- RGI_AWCD %>%
   filter(strain %in% c("41", "53", "57", "67", "74", "77", 
                        "137B","144A","145B","152A", "152B", "154C",
-                       "122A","126A","147A","157B","158", "165A", "170C",
+                       "122A","126B","147A","157B","158", "165A", "170C",
                        "135A", "135B", "149A", "168A"))
 
 # add SM to the beginning of strain names
@@ -710,13 +939,13 @@ cor.test(RGI_AWCD_numsub$comp_ind_inoc, RGI_AWCD_numsub$num_substrates)
 # Pearson's product-moment correlation
 # 
 # data:  RGI_AWCD_numsub$comp_ind_inoc and RGI_AWCD_numsub$num_substrates
-# t = 2.3683, df = 20, p-value = 0.02806
+# t = 2.2476, df = 21, p-value = 0.03547
 # alternative hypothesis: true correlation is not equal to 0
 # 95 percent confidence interval:
-#  0.05778116 0.74299788
+#  0.03439283 0.72157782
 # sample estimates:
 #       cor 
-# 0.4679889 
+# 0.4403522 
 
 
 # cast to make num_sub and AWCD into one column
@@ -730,7 +959,7 @@ RGI_AWCD_numsub_melt$AWCD_substrate <- factor(RGI_AWCD_numsub_melt$AWCD_substrat
 # facet to make plot together with number of substrates metabolised.
 (AWCDgenograph4 <- ggplot(RGI_AWCD_numsub_melt, aes(x = geno, y = value, colour = geno, group = geno))+
     geom_boxplot(aes(fill = geno), alpha = 0.5)+
-    geom_jitter(col = "black", width = 0.1, size = 2) +
+    geom_jitter(col = "black", width = 0.15, size = 2) +
     labs(x = "genospecies group")+
     facet_grid(AWCD_substrate ~ ., scales = "free",
                labeller = as_labeller(c("AWCD" = "Metabolic capacity", 
