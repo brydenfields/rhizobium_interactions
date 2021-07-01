@@ -1,10 +1,11 @@
 # Author: Bryden Fields
 # Email: bryden.fields@york.ac.uk
-# Last updated: 03/02/2021
+# Last updated: 01/07/2021
 
 # Initial set up ---------
 
-setwd('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/scripts/spotplating_scripts')
+#set the working directory to the directory this script is in.
+#setwd("~/what/ever/folder/you/are/working/from") 
 
 library(lme4)
 library(effects)
@@ -213,7 +214,7 @@ all_means$soft_geno <- factor(all_means$soft_geno, levels = c('Lawn-\nOA', 'Lawn
           strip.text = element_text(size = 16),
           plot.title = element_text(size = 16, hjust = 0.5))
 )
-ggsave(plot = fit2_graph, '../../data/intermediate_data/spotplating_data//fullmodel_MEM_spotplating_ci_spotlawnfacet.pdf', width = 25, height = 15, units = 'cm')
+ggsave(plot = fit2_graph, '../../data/intermediate_data/spotplating_data/fullmodel_MEM_spotplating_ci_spotlawnfacet.pdf', width = 25, height = 15, units = 'cm')
 
 
 

@@ -1,10 +1,11 @@
 # Author: Bryden Fields
 # Email: bryden.fields@york.ac.uk
-# Last updated: 03/02/2021
+# Last updated: 01/07/2021
 
 # Initial set-up -----------
 
-setwd('/Users/brydenfields/Documents/Publications/2021_Rhizobiuminteractions_paper/scripts/spotplating_scripts')
+#set the working directory to the directory this script is in.
+#setwd("~/what/ever/folder/you/are/working/from") 
 
 library(tidyverse)
 library(plyr); library(dplyr)
@@ -15,8 +16,7 @@ library(FSA)
 
 source('../summarySE.R')
 
-
-# For reference only: Raw files were read, combined and formatted --------------
+# For reference only: Raw files were read, combined and formatted and are in the raw_data directory --------------
 
 # # read in results file names for the first replicate
 # 
@@ -465,7 +465,7 @@ summary(mod_iz2)
 
 # ANOVA to see if optical densities of spotted liquid cultures differed between genotypes and genospecies ---------
 
-data_spotcultureOD <- read.csv('/Users/brydenfields/Documents/PhD/supernatant/spotplating_images/0619_exp/inoculum_inital_ODs_allreps.csv')
+data_spotcultureOD <- read.csv('../../data/raw_data/spotplating_data/inoculum_inital_ODs_allreps.csv')
 
 # remove repeat 4
 data_spotcultureOD <- data_spotcultureOD %>%
@@ -631,7 +631,6 @@ cbPalette <- c("#D55E00","#0072B2","#E69F00")
           legend.title = element_text(size = 18))
   
 )
-# ggsave(plot = graph_c, '/Users/brydenfields/Documents/PhD/supernatant/spotplating_images/0619_exp/0320_analysis/RGIinoculant_IZdiff_lmcorrelation_v3.pdf', width = 25, height = 20, units = 'cm')
 ggsave(plot = graph_d, '../../data/intermediate_data/spotplating_data/RGIinoculant_IZdiff_lmcorrelation_v4.pdf', width = 25, height = 20, units = 'cm')
 
 
@@ -702,3 +701,120 @@ plot(mod_IZsupmeans_l5, which=2)
 shapiro.test(mod_IZsupmeans_l5$residuals)
 hist(disupmeans_l5$IZ_diff)
 hist(disupmeans_l5$comp_ind)
+
+
+
+
+
+# correlation between IZ vs ANI ------------------
+
+
+# phylogenetic-corrected regression.
+# code from:
+# http://www.phytools.org/Cordoba2017/ex/4/PGLS.html
+# http://www.r-phylo.org/wiki/HowTo/PGLS
+
+library(ape)
+library(nlme)
+library(geiger)
+
+
+# read in inhibition zone diameter data 
+diameter_data_means <- read.csv('../../data/raw_data/spotplating_data/dataset_IZspot_diameterdiffs_averages.csv', row.names = 1)
+
+# read in 6K ANI data 
+ANI_data <- read.csv('../../data/raw_data/supernatant_data/ani_sorted_by_genospecies_snps_new_data_6kgenes_supernatantsamples.csv', row.names = 1)
+
+# remove SM from strain names in rows and column names
+row.names(ANI_data) <- gsub('SM', '', row.names(ANI_data))
+names(ANI_data) <- gsub('SM', '', names(ANI_data))
+
+# make row names a new column for melting
+ANI_data$strain1 <- row.names(ANI_data)
+
+# melt ANI data into long format
+ANI_data_melt <- melt(ANI_data)
+names(ANI_data_melt)[2:3] <- c("strain2", "ANI")
+
+# make diameter_data_means into a matrix of col = lawn/soft and row = spot
+IZmatrix <- acast(diameter_data_means[c("spot_strain", "soft_strain", "IZ_diff")], spot_strain ~ soft_strain)
+row.names(IZmatrix) <- paste(row.names(IZmatrix),"spot", sep = "_")
+colnames(IZmatrix) <- paste(colnames(IZmatrix),"lawn", sep = "_")
+
+# calculate a euclidean distance matrix of strains
+library(vegan)
+IZeuclideanmatrix <- vegdist(IZmatrix, method = "euclidean")
+
+# make into long format and merge with ANI data
+#melt(as.matrix(IZeuclideanmatrix), varnames = c("row", "col"))
+IZeuclideanmatrix_melt <- melt(as.matrix(IZeuclideanmatrix), varnames = c("strain1", "strain2"))
+names(IZeuclideanmatrix_melt)[3] <- "IZdiff_mean_euclidean"
+
+# add "_spot" to the strain names for ani
+ANI_data_melt2 <- ANI_data_melt
+ANI_data_melt2$strain1 <- paste(ANI_data_melt2$strain1,"spot", sep = "_")
+ANI_data_melt2$strain2 <- paste(ANI_data_melt2$strain2,"spot", sep = "_")
+
+ANI_IZeuclidean_data <- merge(IZeuclideanmatrix_melt, ANI_data_melt2, 
+                      by = c('strain1', 'strain2'),
+                      all.x = T)
+
+
+# make a graph correlating the mean RGI as inoculant to mean inhibition zone diameter euclidean distance
+(graph_e1 <- ggplot(data = ANI_IZeuclidean_data, aes(y = IZdiff_mean_euclidean, x = ANI)) +
+    geom_point(size = 5, alpha = 0.6) +
+    geom_smooth(method= lm, colour="black", se = FALSE) +
+    labs(y = 'Inhibitory capacity profile for spotted strain\n (Euclidean distance)', 
+         x = 'Pairwise Average Nucleotide Identity between spotted and lawn strain') +
+    #xlim(0.9015, 0.904) +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 18),
+          axis.text.y = element_text(size = 18),
+          axis.title=element_text(size = 20),
+          legend.text = element_text(size = 16),
+          legend.title = element_text(size = 18))
+  
+)
+ggsave(plot = graph_e1, '../../data/intermediate_data/spotplating_data/ANI_IZdiffeuclidean_lmcorrelation.pdf', width = 25, height = 20, units = 'cm')
+
+
+# can also do a pearson's correlation
+cor.test(ANI_IZeuclidean_data$ANI, ANI_IZeuclidean_data$IZdiff_mean_euclidean)
+
+# Pearson's product-moment correlation
+# 
+# data:  ANI_IZeuclidean_data$ANI and ANI_IZeuclidean_data$IZdiff_mean_euclidean
+# t = -9.1461, df = 574, p-value < 2.2e-16
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#  -0.4259311 -0.2832004
+# sample estimates:
+#        cor 
+# -0.3566451
+
+
+# carry out regression
+mod_ANI_IZ_means <- lm(IZdiff_mean_euclidean ~ ANI, data = ANI_IZeuclidean_data)
+summary(mod_ANI_IZ_means)
+
+
+# Call:
+#   lm(formula = IZdiff_mean_euclidean ~ ANI, data = ANI_IZeuclidean_data)
+# 
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -9.524 -5.330 -2.853  1.905 21.107 
+# 
+# Coefficients:
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)   78.240      7.619  10.269   <2e-16 ***
+# ANI          -74.555      8.152  -9.146   <2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 7.549 on 574 degrees of freedom
+# Multiple R-squared:  0.1272,	Adjusted R-squared:  0.1257 
+# F-statistic: 83.65 on 1 and 574 DF,  p-value: < 2.2e-16
+
+
+
