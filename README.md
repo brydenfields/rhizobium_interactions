@@ -1,7 +1,7 @@
 rhizobium_interactions: scripts for figure generation and statistical analyses
 ===
 
-This repository provides the R scripts and raw data used to generate the figures and statistical analyses in the manuscript by Fields et al. "Genetic variation is associated with differences in facilitative and competitive interactions in the Rhizobium leguminosarum species complex", currently in prep for publication.
+This repository provides the R scripts and raw data used to generate the figures and statistical analyses in the manuscript by Fields et al. "Genetic variation is associated with differences in facilitative and competitive interactions in the Rhizobium leguminosarum species complex", published in Environmental Microbiology: https://doi.org/10.1111/1462-2920.15720.
 
 The R scripts and raw data are provided in this repository to enable regeneration of the data analysis undertaken in the study. The figures and intermediate data files generated within the scripts are also saved here. The scripts have been edited so that all folders can be downloaded and the files run locally on a user's computer. The working directory is hard-coded and will need to be altered by the user for the scripts to run - user's should set the working directory for each script to the local directory path of the specific script being run.
 
