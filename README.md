@@ -18,6 +18,7 @@ The following scripts are organised into 4 separate folders depending on which e
 Scripts are run with R unless otherwise stated. 
 All scripts include comments detailing the code function at each step.
 
+
 ## comparative_genomics_scripts
 
 **BLASTn_quorumsensing_genes.txt** used for processing BLASTn output of quorum sensing genes in linux.
@@ -51,6 +52,7 @@ All scripts include comments detailing the code function at each step.
 
 ## data/raw_data/
 -----
+
 
 The following raw data files are organised into 4 separate folders depending on which experimental data is being used - as with the script directory layout above. 
 
